@@ -30,10 +30,10 @@ stage('Static Code Analysis') {
   }
   steps {
     withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
-      sh """
+      sh '''
       cd java-maven-sonar-argocd-helm-k8s/spring-boot-app
-      mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}
-      """
+      mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=$SONAR_URL
+      '''
     }
   }
 }
@@ -69,24 +69,26 @@ stage('Update Deployment File') {
 
   steps {
 
-    withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+    dir("${WORKSPACE}") {
 
-      sh """
-      git config user.email "chaitanyach951@gmail.com"
-      git config user.name "krishnachaitanya90"
+      withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
 
-      sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+        sh '''
+        git config user.email "chaitanyach951@gmail.com"
+        git config user.name "krishnachaitanya90"
 
-      git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-      git commit -m "Update deployment image to version ${BUILD_NUMBER}" || true
+        sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
 
-      git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
-      """
+        git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+        git commit -m "Update deployment image to version ${BUILD_NUMBER}" || true
+
+        git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME}.git HEAD:main
+        '''
+      }
 
     }
 
   }
-
 }
 
 }
